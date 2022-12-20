@@ -286,12 +286,12 @@ local function CombatEventCatcher(event, ...)
 	end
 end
 local function OnLoad()
-	ni.combatlog.registerhandler("Prot-Cata", CombatEventCatcher);
-	ni.GUI.AddFrame("Prot-Cata", items);
+	ni.combatlog.registerhandler("ProtPala-WotLK", CombatEventCatcher);
+	ni.GUI.AddFrame("ProtPala-WotLK", items);
 end
 local function OnUnload()
-	ni.combatlog.unregisterhandler("Prot-Cata");
-	ni.GUI.DestroyFrame("Prot-Cata");
+	ni.combatlog.unregisterhandler("ProtPala-WotLK");
+	ni.GUI.DestroyFrame("ProtPala-WotLK");
 end
 
 
@@ -435,6 +435,7 @@ local abilities = {
 		and ni.spell.available(spells.RighteousDefense.id)
 		and ni.spell.valid("target",spells.RighteousDefense.id,true,true) then
 			ni.spell.cast(spells.RighteousDefense.name,"target")
+			return true;
 		end
 	end,
 	--拯救之手
