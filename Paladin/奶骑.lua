@@ -17,9 +17,9 @@ local spells = {
     HandOfFreedom = cs(1044),
     HandOfSacrifice = cs(6940),
     HandOfProtection = cs(1022),
-    --保护之手
+     --保护之手
     SealOfRighteousness = cs(21084),
-    --自律
+     --自律
     SealOfJustice = cs(20164),
     SealOfLight = cs(20165),
     SealOfWisdom = cs(20166),
@@ -33,7 +33,7 @@ local spells = {
     GreaterBlessingOfWisdom = cs(48938),
     BlessingOfWisdom = cs(19742),
     DevotionAura = cs(465),
-    --虔诚光环
+     --虔诚光环
     RetributionAura = cs(54043),
     ConcentrationAura = cs(19746),
     ShadowResistanceAura = cs(48943),
@@ -41,7 +41,7 @@ local spells = {
     FireResistanceAura = cs(48947),
     CrusaderAura = cs(32223),
     HolyLight = cs(635),
-    --圣光术
+     --圣光术
     BeaconOfLight = cs(53563),
     FlashOfLight = cs(48785),
     HolyShock = cs(48825),
@@ -51,8 +51,9 @@ local spells = {
     DivineIllumination = cs(31842), --神启
     AvengingWrath = cs(31884),
     LayOnHands = cs(633),
-    --圣疗术
-    SacredShield = cs(53601)
+     --圣疗术
+    SacredShield = cs(53601),
+    HammerofJustice = cs(853),
 }
 
 local isEnabled = {
@@ -66,6 +67,7 @@ local isEnabled = {
     [spells.HandOfProtection.name] = true,
     [spells.DivinePlea.name] = true,
     [spells.InfusionOfLight.name] = true,
+    [spells.HammerofJustice.name] = true,
     ["Debug"] = false,
     ["logs"] = true
 }
@@ -79,7 +81,8 @@ local getValueToCast = {
     [spells.LayOnHands.name] = 20,
     [spells.HandOfProtection.name] = 20,
     [spells.DivinePlea.name] = 50,
-    [spells.InfusionOfLight.name] = 85
+    [spells.InfusionOfLight.name] = 85,
+    [spells.HammerofJustice.name] = 60,
 }
 local inputs = {}
 
@@ -378,6 +381,15 @@ local items = {
         key = spells.Cleanse.name
     },
     {
+		type = "entry",
+		text = "制裁之锤(打断)",
+		tooltip = "打断周围的目标施法",
+		enabled = isEnabled[spells.HammerofJustice.name],
+		value = getValueToCast[spells.HammerofJustice.name],
+		width = 50,
+		key = "HammerofJustice",
+	},
+    {
         type = "page",
         number = 2,
         text = "|cff00C957天赋设置"
@@ -482,7 +494,8 @@ local queue = {
     "Flash Of Light",
     "Judgement",
     "Divine Plea",
-    "Sacred Shield"
+    "Sacred Shield",
+    "HammerofJustice"
 }
 
 local abilities = {
@@ -766,6 +779,21 @@ local abilities = {
                 end
             end
         end
-    end
+    end,
+    ["HammerofJustice"] = function()
+        if isEnabled[spells.HammerofJustice.name]
+		and ni.spell.available(spells.HammerofJustice.id) then
+            local enemies = ni.player.enemiesinrange(10)
+            for i = 1, #enemies do
+                local InterruptTargets = enemies[i].guid;
+                if ni.spell.shouldinterrupt(InterruptTargets,getValueToCast.HammerofJustice.name)
+                and not ni.unit.isboss(InterruptTargets)
+                and ni.spell.valid(InterruptTargets, spells.HammerofJustice.id, true, true) then
+                    ni.spell.cast(spells.HammerofJustice.name, InterruptTargets)
+                    return true;
+                end
+            end
+        end
+    end,
 }
 ni.bootstrap.profile("奶骑", queue, abilities, OnLoad, OnUnload)
