@@ -786,7 +786,7 @@ local abilities = {
             local enemies = ni.player.enemiesinrange(10)
             for i = 1, #enemies do
                 local InterruptTargets = enemies[i].guid;
-                if ni.spell.shouldinterrupt(InterruptTargets,getValueToCast.HammerofJustice.name)
+                if ni.spell.shouldinterrupt(InterruptTargets,getValueToCast[spells.HammerofJustice.name])
                 and not ni.unit.isboss(InterruptTargets)
                 and ni.spell.valid(InterruptTargets, spells.HammerofJustice.id, true, true) then
                     ni.spell.cast(spells.HammerofJustice.name, InterruptTargets)
