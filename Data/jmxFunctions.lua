@@ -139,7 +139,8 @@ function functions.StopNi()
 		functions.InvulnerableBuffActive("target") or
 		functions.StunDebuffActive("player") or
 		functions.cantAttackDebuffActive("player") or
-		ni.unit.issilenced("player")
+		ni.unit.issilenced("player") or
+		ni.spell.gcd()
 end
 
 function functions.youInInstance(type)
