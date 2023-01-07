@@ -1,3 +1,4 @@
+--法力之泉 10491
 local functions = ni.utils.require("jmxFunctions")
 local function cs(ids)
     local name = GetSpellInfo(ids)
@@ -10,6 +11,7 @@ local function cs(ids)
 end
 
 local spells = {
+    autoattack = GetSpellInfo(6603),
     DivinePlea = cs(54428),
     Consecration = cs(48819),
     HammerOfWrath = cs(48806),
@@ -17,9 +19,9 @@ local spells = {
     HandOfFreedom = cs(1044),
     HandOfSacrifice = cs(6940),
     HandOfProtection = cs(1022),
-     --保护之手
+    --保护之手
     SealOfRighteousness = cs(21084),
-     --自律
+    --自律
     SealOfJustice = cs(20164),
     SealOfLight = cs(20165),
     SealOfWisdom = cs(20166),
@@ -28,12 +30,12 @@ local spells = {
     BlessingOfSanctuary = cs(20911),
     GreaterBlessingOfKings = cs(25898),
     BlessingOfKings = cs(20217),
-    GreaterBlessingOfMight = cs(48934),
+    GreaterBlessingOfMight = cs(25782),
     BlessingOfMight = cs(19740),
-    GreaterBlessingOfWisdom = cs(48938),
+    GreaterBlessingOfWisdom = cs(25894),
     BlessingOfWisdom = cs(19742),
     DevotionAura = cs(465),
-     --虔诚光环
+    --虔诚光环
     RetributionAura = cs(54043),
     ConcentrationAura = cs(19746),
     ShadowResistanceAura = cs(48943),
@@ -41,7 +43,7 @@ local spells = {
     FireResistanceAura = cs(48947),
     CrusaderAura = cs(32223),
     HolyLight = cs(635),
-     --圣光术
+    --圣光术
     BeaconOfLight = cs(53563),
     FlashOfLight = cs(48785),
     HolyShock = cs(48825),
@@ -51,12 +53,14 @@ local spells = {
     DivineIllumination = cs(31842), --神启
     AvengingWrath = cs(31884),
     LayOnHands = cs(633),
-     --圣疗术
+    --圣疗术
     SacredShield = cs(53601),
-    HammerofJustice = cs(853),
+    HammerofJustice = cs(853)
 }
 
 local isEnabled = {
+    ["autotarget"] = true,
+    ["autoattack"] = true,
     [spells.HolyLight.name] = true,
     [spells.FlashOfLight.name] = true,
     [spells.HolyShock.name] = true,
@@ -82,7 +86,7 @@ local getValueToCast = {
     [spells.HandOfProtection.name] = 20,
     [spells.DivinePlea.name] = 50,
     [spells.InfusionOfLight.name] = 85,
-    [spells.HammerofJustice.name] = 60,
+    [spells.HammerofJustice.name] = 60
 }
 local inputs = {}
 
@@ -122,6 +126,20 @@ local items = {
     },
     {
         type = "separator"
+    },
+    {
+        type = "entry",
+        text = "\124T" .. select(3, GetSpellInfo(2764)) .. ":26:26\124t 自动选择目标",
+        tooltip = "自动切换你周围最近的敌人",
+        enabled = isEnabled["autotarget"],
+        key = "autotarget"
+    },
+    {
+        type = "entry",
+        text = "\124T" .. select(3, GetSpellInfo(674)) .. ":26:26\124t 自动攻击目标",
+        tooltip = "自动攻击目标",
+        enabled = isEnabled["autoattack"],
+        key = "autoattack"
     },
     {
         type = "dropdown",
@@ -381,14 +399,14 @@ local items = {
         key = spells.Cleanse.name
     },
     {
-		type = "entry",
-		text = "制裁之锤(打断)",
-		tooltip = "打断周围的目标施法",
-		enabled = isEnabled[spells.HammerofJustice.name],
-		value = getValueToCast[spells.HammerofJustice.name],
-		width = 50,
-		key = "HammerofJustice",
-	},
+        type = "entry",
+        text = "制裁之锤(打断)",
+        tooltip = "打断周围的目标施法",
+        enabled = isEnabled[spells.HammerofJustice.name],
+        value = getValueToCast[spells.HammerofJustice.name],
+        width = 50,
+        key = "HammerofJustice"
+    },
     {
         type = "page",
         number = 2,
@@ -477,8 +495,10 @@ local function getTheSavior()
 end
 
 local queue = {
-    "test",
+    --"test",
     "StopRotation",
+    "Auto Target",
+    "Auto Attack",
     "Seal",
     "Aura",
     "Blessing",
@@ -490,20 +510,27 @@ local queue = {
     "Infusion Of Light",
     "Holy Light",
     "Holy Shock",
+    "Holy Shock(llv)",
     "Cleanse",
     "Flash Of Light",
+    "Flash Of Light(llv)",
     "Judgement",
+    "HammerofJustice",
     "Divine Plea",
-    "Sacred Shield",
-    "HammerofJustice"
+    "Sacred Shield"
 }
 
 local abilities = {
     ["test"] = function()
-        if ni.vars.units.mainTankEnabled then
+        --[[ if ni.vars.units.mainTankEnabled then
             local mainTank = ni.vars.units.mainTank
             print(mainTank)
-        end
+        end 
+        local cc = IsSpellKnown(spells.BeaconOfLight.id)
+        print(cc)]]
+        local pt = ni.objects["target"]
+        local ft = ni.objects["focustarget"]
+        print(ft.name)
     end,
     -----------------------------------
     ["StopRotation"] = function()
@@ -511,6 +538,48 @@ local abilities = {
             return true
         end
         ni.vars.debug = select(2, GetSetting("Debug"))
+    end,
+    -----------------------------------
+    ["Auto Target"] = function()
+        local pt = ni.objects["target"]
+        local ft = ni.objects["focustarget"]
+        if isEnabled["autotarget"] and UnitAffectingCombat("player") then
+            if
+                ni.unit.exists("focus") and UnitIsFriend("player", "focustarget") and ni.unit.exists("focustarget") and
+                    not UnitIsDeadOrGhost("focustarget") and
+                    UnitCanAttack("player", "focustarget")
+             then
+                if not ni.unit.exists("target") then
+                    ni.player.runtext("/tar focustarget")
+                    return true
+                end
+                if ni.unit.exists("target") then
+                    if not UnitCanAttack("player", "target") or UnitIsDeadOrGhost("target") and not pt == ft then
+                        ni.player.runtext("/tar focustarget")
+                        return true
+                    end
+                end
+            end
+            if
+                ni.unit.exists("target") and UnitIsDeadOrGhost("target") or not UnitCanAttack("player", "target") or
+                    not ni.unit.exists("target")
+             then
+                ni.player.runtext("/targetenemy")
+                return true
+            end
+        end
+    end,
+    -----------------------------------
+    ["Auto Attack"] = function()
+        if isEnabled["autoattack"] and UnitAffectingCombat("player") then
+            if
+                ni.unit.exists("target") and UnitCanAttack("player", "target") and not UnitIsDeadOrGhost("target") and
+                    not IsCurrentSpell(spells.autoattack)
+             then
+                ni.spell.cast(spells.autoattack)
+                return true
+            end
+        end
     end,
     -----------------------------------
     ["Seal"] = function()
@@ -533,13 +602,14 @@ local abilities = {
     -----------------------------------
     ["Blessing"] = function()
         local selectedBlessing = menus["Blessing"]
-
         if
             ni.spell.available(selectedBlessing.id) and not ni.player.buff(selectedBlessing.id) and
                 IsUsableSpell(selectedBlessing.name)
          then
-            ni.spell.cast(selectedBlessing.name, "player")
-            return true
+            if not ni.unit.buff("player", GetSpellInfo(10491)) then
+                ni.spell.cast(selectedBlessing.name, "player")
+                return true
+            end
         end
     end,
     -----------------------------------
@@ -632,7 +702,7 @@ local abilities = {
                         not ni.unit.buff(target, spells.BeaconOfLight.name, "player") and
                         ni.spell.valid(target, spells.HolyLight.name, false, true, true)
                  then
-                    return ni.spell.delaycast(spells.HolyLight.name, target, 2.5)
+                    return ni.spell.delaycast(spells.HolyLight.name, target, ni.spell.casttime(spells.HolyLight.name))
                 end
             end
 
@@ -652,7 +722,7 @@ local abilities = {
         if isEnabled["HandOfProtection"] and UnitAffectingCombat("player") then
             for i = 1, #ni.members do
                 if
-                    ni.members[i].hp < getValueToCast["HandOfProtection"] and not ni.members[i].istank and
+                    ni.members[i].hp < getValueToCast[spells.HandOfProtection.name] and not ni.members[i].istank and
                         not ni.unit.debuff(ni.members[i].unit, 25771) and
                         ni.spell.available(spells.HandOfProtection.id) and
                         ni.spell.valid(ni.members[i].unit, spells.HandOfProtection.id, false, true, true)
@@ -702,11 +772,15 @@ local abilities = {
                         not ni.unit.buff(target, spells.BeaconOfLight.id, "player") and
                         ni.spell.valid(target, spells.FlashOfLight.name, false, true, true)
                  then
-                    return ni.spell.delaycast(spells.FlashOfLight.name, target, 2)
+                    return ni.spell.delaycast(
+                        spells.FlashOfLight.name,
+                        target,
+                        ni.spell.casttime(spells.FlashOfLight.name)
+                    )
                 end
             end
 
-            local membersBelow = functions.members.inrangebelow("player", 40, getValueToCast[spells.HolyShock.name])
+            local membersBelow = functions.members.inrangebelow("player", 40, getValueToCast[spells.FlashOfLight.name])
 
             if #membersBelow == 1 and ni.unit.buff(membersBelow[1].unit, spells.BeaconOfLight.id, "player") then
                 local theSavior = getTheSavior()
@@ -715,6 +789,44 @@ local abilities = {
 
             for _, member in ipairs(membersBelow) do
                 castSpell(member.unit)
+            end
+        end
+    end,
+    -----------------------------------
+    ["Holy Shock(llv)"] = function()
+        if isEnabled[spells.HolyShock.name] then
+            local membersBelow = functions.members.inrangebelow("player", 40, getValueToCast[spells.HolyShock.name])
+            if #membersBelow == 1 and UnitLevel("player") < 80 then
+                for _, member in ipairs(membersBelow) do
+                    if
+                        ni.spell.available(spells.HolyShock.name) and
+                            ni.spell.valid(member.unit, spells.HolyShock.name, false, true, true) and
+                            not ni.unit.ismoving("player")
+                     then
+                        ni.spell.delaycast(spells.HolyShock.name, member.unit, ni.spell.casttime(spells.HolyShock.name))
+                    end
+                end
+            end
+        end
+    end,
+    -----------------------------------
+    ["Flash Of Light(llv)"] = function()
+        if isEnabled[spells.FlashOfLight.name] then
+            local membersBelow = functions.members.inrangebelow("player", 40, getValueToCast[spells.FlashOfLight.name])
+            if #membersBelow >= 1 and UnitLevel("player") < 80 then
+                for _, member in ipairs(membersBelow) do
+                    if
+                        ni.spell.available(spells.FlashOfLight.name) and
+                            ni.spell.valid(member.unit, spells.FlashOfLight.name, false, true, true) and
+                            not ni.unit.ismoving("player")
+                     then
+                        ni.spell.delaycast(
+                            spells.FlashOfLight.name,
+                            member.unit,
+                            ni.spell.casttime(spells.FlashOfLight.name)
+                        )
+                    end
+                end
             end
         end
     end,
@@ -755,6 +867,7 @@ local abilities = {
             for _, member in ipairs(ni.members) do
                 if
                     IsSpellKnown(spells.Cleanse.id) and member.dispel and ni.spell.available(spells.Cleanse.id) and
+                        not ni.spell.gcd() and
                         ni.spell.valid(member.unit, spells.Cleanse.id, false, false, true) and
                         functions.LosCast(spells.Cleanse.name, member.unit) and
                         not functions.doNotDissipateIt(member.unit)
@@ -781,19 +894,20 @@ local abilities = {
         end
     end,
     ["HammerofJustice"] = function()
-        if isEnabled[spells.HammerofJustice.name]
-		and ni.spell.available(spells.HammerofJustice.id) then
+        if isEnabled[spells.HammerofJustice.name] and ni.spell.available(spells.HammerofJustice.id) then
             local enemies = ni.player.enemiesinrange(10)
             for i = 1, #enemies do
-                local InterruptTargets = enemies[i].guid;
-                if ni.spell.shouldinterrupt(InterruptTargets,getValueToCast[spells.HammerofJustice.name])
-                and not ni.unit.isboss(InterruptTargets)
-                and ni.spell.valid(InterruptTargets, spells.HammerofJustice.id, true, true) then
+                local InterruptTargets = enemies[i].guid
+                if
+                    ni.spell.shouldinterrupt(InterruptTargets, getValueToCast[spells.HammerofJustice.name]) and
+                        not ni.unit.isboss(InterruptTargets) and
+                        ni.spell.valid(InterruptTargets, spells.HammerofJustice.id, true, true)
+                 then
                     ni.spell.cast(spells.HammerofJustice.name, InterruptTargets)
-                    return true;
+                    return true
                 end
             end
         end
-    end,
+    end
 }
 ni.bootstrap.profile("奶骑", queue, abilities, OnLoad, OnUnload)
